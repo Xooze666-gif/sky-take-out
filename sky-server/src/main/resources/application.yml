@@ -1,0 +1,71 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: sky-take-out
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sky_take_out?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: "123456"
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+  task:
+    scheduling:
+      pool:
+        # 调度线程池大小：默认 1，多个 @Scheduled 任务会串行排队；这里给 2 个线程
+        size: 2
+      thread-name-prefix: sky-scheduling-
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # 打印 SQL，便于自查（上线可关掉）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+    banner: false
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.sky.entity
+
+logging:
+  level:
+    com.sky: debug
+    root: info
+
+sky:
+  jwt:
+    # 生产环境应放环境变量/配置中心，此处为演示
+    admin-secret-key: sky-take-out-admin-secret-key-2026
+    # 2 小时
+    admin-ttl: 7200000
+    admin-token-name: token
+    # 用户端（与管理员端密钥分开，避免一端泄露殃及另一端）
+    user-secret-key: sky-take-out-user-secret-key-2026
+    # 7 天
+    user-ttl: 604800000
+    user-token-name: authentication
+  file:
+    # 图片上传落盘目录（用正斜杠，Windows 下 Spring 也能识别）
+    upload-dir: D:/project/sky-take-out/upload
+  task:
+    # 单次扫描最大处理条数（防积压时一次全量更新）
+    batch-size: 200
+    # 待付款超时自动取消：每分钟第 0 秒扫描一次
+    cancel-payment:
+      cron: "0 * * * * ?"
+      timeout-minutes: 15
+    # 派送中超时自动完成：每天凌晨 1:00
+    auto-complete:
+      cron: "0 0 1 * * ?"
+      timeout-minutes: 60

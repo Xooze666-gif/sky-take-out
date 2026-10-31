@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苍穹外卖 · 商家管理端</title>
+    <style>
+        :root {
+            --primary: #ffc200;
+            --primary-dark: #e6ae00;
+            --bg: #f5f6f8;
+            --sidebar: #1f2633;
+            --sidebar-active: #ffc200;
+            --text: #303133;
+            --text-light: #909399;
+            --border: #e4e7ed;
+            --white: #fff;
+            --danger: #f56c6c;
+            --success: #67c23a;
+            --info: #909399;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+        a { color: inherit; text-decoration: none; }
+        button { cursor: pointer; border: none; outline: none; }
+
+        /* ===== 登录页 ===== */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1f2633 0%, #2b3447 100%);
+        }
+        .login-card {
+            width: 380px;
+            background: var(--white);
+            border-radius: 12px;
+            padding: 40px 36px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .login-card h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .login-card .subtitle {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 28px;
+            font-size: 13px;
+        }
+        .form-item { margin-bottom: 18px; }
+        .form-item label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-light); }
+        .form-item input {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color .2s;
+        }
+        .form-item input:focus { border-color: var(--primary); }
+        .btn-primary {
+            width: 100%;
+            height: 42px;
+            background: var(--primary);
+            color: #333;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: background .2s;
+        }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; }
+
+        /* ===== 主布局 ===== */
+        .layout { display: none; min-height: 100vh; }
+        .layout.show { display: flex; }
+        .sidebar {
+            width: 200px;
+            background: var(--sidebar);
+            color: #c8cdd5;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar .logo {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--white);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar .logo .dot { color: var(--primary); margin-right: 6px; }
+        .nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 13px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background .15s, color .15s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-item.active {
+            background: rgba(255,194,0,0.12);
+            color: var(--sidebar-active);
+            border-left-color: var(--sidebar-active);
+        }
+        .nav-item .icon { margin-right: 10px; font-size: 16px; }
+        .sidebar .user-info {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 13px;
+            color: #a7adb8;
+        }
+        .sidebar .logout {
+            margin: 0 12px 14px;
+            height: 34px;
+            background: rgba(255,255,255,0.08);
+            color: #c8cdd5;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .sidebar .logout:hover { background: rgba(255,255,255,0.15); }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .main-header {
+            height: 60px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .main-content { flex: 1; padding: 24px; overflow-y: auto; }
+
+        /* ===== 通用组件 ===== */
+        .panel { background: var(--white); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .panel-body { padding: 20px; }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .toolbar input, .toolbar select {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .btn {
+            height: 34px;
+            padding: 0 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: opacity .2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-yellow { background: var(--primary); color: #333; }
+        .btn-plain { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        th { background: #fafafa; color: var(--text-light); font-weight: 500; white-space: nowrap; }
+        tbody tr:hover { background: #fafbfc; }
+        .empty { text-align: center; color: var(--text-light); padding: 40px 0; }
+
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-green { background: #e8f8ee; color: var(--success); }
+        .tag-red { background: #fdeaea; color: var(--danger); }
+        .tag-gray { background: #f0f0f0; color: var(--info); }
+        .tag-yellow { background: #fdf6e3; color: #e6a23c; }
+
+        .pagination { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; align-items: center; }
+        .pagination button {
+            min-width: 30px;
+            height: 30px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .pagination button.active { background: var(--primary); border-color: var(--primary); }
+        .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .stat-card .num { font-size: 26px; font-weight: 700; margin: 6px 0; }
+        .stat-card .label { color: var(--text-light); font-size: 13px; }
+
+        /* 弹窗 */
+        .modal-mask {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-mask.show { display: flex; }
+        .modal {
+            background: var(--white);
+            border-radius: 10px;
+            width: 480px;
+            max-width: 90vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .modal h3 { margin-bottom: 18px; font-size: 16px; }
+        .modal .form-item textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #303133;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity .3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        .module { display: none; }
+        .module.active { display: block; }
+
+        .img-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 4px; background: #f0f0f0; }
+        .detail-list { font-size: 13px; }
+        .detail-list div { padding: 6px 0; border-bottom: 1px dashed var(--border); }
+        .detail-list span { color: var(--text-light); margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+<!-- ============ 登录页 ============ -->
+<div id="loginPage" class="login-page">
+    <div class="login-card">
+        <h1>苍穹外卖</h1>
+        <div class="subtitle">商家管理端</div>
+        <div class="form-item">
+            <label>账号</label>
+            <input id="loginUsername" type="text" placeholder="请输入账号" value="admin">
+        </div>
+        <div class="form-item">
+            <label>密码</label>
+            <input id="loginPassword" type="password" placeholder="请输入密码" value="123456">
+        </div>
+        <button class="btn-primary" onclick="login()">登 录</button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<!-- ============ 主布局 ============ -->
+<div id="layout" class="layout">
+    <div class="sidebar">
+        <div class="logo"><span class="dot">◆</span>苍穹外卖</div>
+        <div class="nav" id="nav"></div>
+        <div class="user-info" id="userInfo"></div>
+        <button class="logout" onclick="logout()">退出登录</button>
+    </div>
+    <div class="main">
+        <div class="main-header" id="mainHeader">数据概览</div>
+        <div class="main-content" id="mainContent"></div>
+    </div>
+</div>
+
+<!-- 通用弹窗 -->
+<div id="modalMask" class="modal-mask">
+    <div class="modal" id="modalBody"></div>
+</div>
+
+<!-- 提示 -->
+<div id="toast" class="toast"></div>
+
+<script>
+/* ================= 全局状态 ================= */
+const API = ''; // 同源，直接相对路径
+let token = localStorage.getItem('admin_token') || '';
+let currentUser = null;
+let currentModule = 'dashboard';
+
+/* ================= 工具函数 ================= */
+function $(sel) { return document.querySelector(sel); }
+
+function showToast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function fmtTime(t) {
+    if (!t) return '-';
+    return String(t).replace('T', ' ');
+}
+
+/* 统一请求封装 */
+async function request(url, options = {}) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['token'] = token;
+    const opts = { ...options, headers: { ...headers, ...(options.headers || {}) } };
+    const resp = await fetch(API + url, opts);
+    if (resp.status === 401) { logout(); throw new Error('登录已过期'); }
+    const data = await resp.json();
+    if (data.code !== 1) {
+        throw new Error(data.msg || '操作失败');
+    }
+    return data.data;
+}
+
+/* ================= 登录 / 登出 ================= */
+async function login() {
+    const username = $('#loginUsername').value.trim();
+    const password = $('#loginPassword').value;
+    if (!username || !password) { $('#loginError').textContent = '请输入账号和密码'; return; }
+    try {
+        const resp = await fetch(API + '/admin/employee/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await resp.json();
+        if (data.code !== 1) { $('#loginError').textContent = data.msg || '登录失败'; return; }
+        token = data.data.token;
+        currentUser = data.data;
+        localStorage.setItem('admin_token', token);
+        localStorage.setItem('admin_name', data.data.name || username);
+        enterApp();
+    } catch (e) {
+        $('#loginError').textContent = '网络错误：' + e.message;
+    }
+}
+
+function logout() {
+    token = '';
+    currentUser = null;
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_name');
+    $('#layout').classList.remove('show');
+    $('#loginPage').style.display = 'flex';
+}
+
+function enterApp() {
+    $('#loginPage').style.display = 'none';
+    $('#layout').classList.add('show');
+    $('#userInfo').textContent = (currentUser?.name || localStorage.getItem('admin_name')) + ' · 管理员';
+    renderNav();
+    switchModule('dashboard');
+}
+
+/* ================= 导航 ================= */
+const NAV_ITEMS = [
+    { key: 'dashboard', icon: '📊', name: '数据概览' },
+    { key: 'order', icon: '📋', name: '订单管理' },
+    { key: 'dish', icon: '🍜', name: '菜品管理' },
+    { key: 'setmeal', icon: '🍱', name: '套餐管理' },
+    { key: 'category', icon: '🏷️', name: '分类管理' },
+    { key: 'employee', icon: '👤', name: '员工管理' },
+    { key: 'report', icon: '📈', name: '统计报表' },
+];
+
+function renderNav() {
+    $('#nav').innerHTML = NAV_ITEMS.map(item =>
+        `<div class="nav-item ${item.key === currentModule ? 'active' : ''}" data-key="${item.key}">
+            <span class="icon">${item.icon}</span>${item.name}
+        </div>`
+    ).join('');
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.onclick = () => switchModule(el.dataset.key);
+    });
+}
+
+const MODULE_TITLES = {
+    dashboard: '数据概览', order: '订单管理', dish: '菜品管理',
+    setmeal: '套餐管理', category: '分类管理', employee: '员工管理', report: '统计报表'
+};
+
+function switchModule(key) {
+    currentModule = key;
+    $('#mainHeader').textContent = MODULE_TITLES[key];
+    renderNav();
+    const loaders = {
+        dashboard: loadDashboard, order: loadOrder, dish: loadDish,
+        setmeal: loadSetmeal, category: loadCategory, employee: loadEmployee, report: loadReport
+    };
+    loaders[key]();
+}
+
+/* ================= 数据概览 ================= */
+async function loadDashboard() {
+    $('#mainContent').innerHTML = '<div class="empty">加载中...</div>';
+    try {
+        const stats = await request('/admin/order/statistics');
+        const statusMap = {1:'待付款',2:'待接单',3:'已接单',4:'派送中',5:'已完成',6:'已取消'};
+        const cards = Object.keys(statusMap).map(k =>
+            `<div class="stat-card">
+                <div class="label">${statusMap[k]}</div>
+                <div class="num" style="color:${k==='5'?'#67c23a':k==='6'?'#f56c6c':'#303133'}">${stats[k] || 0}</div>
+            </div>`
+        ).join('');
+        $('#mainContent').innerHTML = `
+            <div class="stat-cards">${cards}</div>
+            <div class="panel"><div class="panel-body">
+                <h3 style="margin-bottom:12px">项目技术亮点</h3>
+                <div style="line-height:2;color:#606266;font-size:13px">
+                    ① 手写 JWT（HS256，零第三方依赖，管理端/用户端双密钥隔离）<br>
+                    ② ThreadLocal 上下文 + 拦截器鉴权 + afterCompletion 清理<br>
+                    ③ MyBatis-Plus 公共字段自动填充（MetaObjectHandler）<br>
+                    ④ 菜品/套餐关联表 + 事务 + 价格快照防篡改<br>
+                    ⑤ 支付回调幂等（订单状态机 + 唯一索引）<br>
+                    ⑥ WebSocket 来单/催单实时推送<br>
+                    ⑦ 统计报表聚合 SQL + POI Excel 导出
+                </div>
+            </div></div>
+        `;
+    } catch (e) { $('#mainContent').innerHTML = `<div class="empty">${e.message}</div>`; }
+}
+
+/* ================= 订单管理 ================= */
+const ORDER_STATUS = {1:'待付款',2:'待接单',3:'已接单',4:'派送中',5:'已完成',6:'已取消'};
+let orderPage = { page: 1, pageSize: 10, total: 0, query: {} };
+
+async function loadOrder() {
+    $('#mainContent').innerHTML = `
+        <div class="panel"><div class="panel-body">
+            <div class="toolbar">
+                <input id="orderNumber" placeholder="订单号" style="width:180px">
+                <input id="orderPhone" placeholder="手机号" style="width:140px">
+                <select id="orderStatus">
+                    <option value="">全部状态</option>
+                    ${Object.entries(ORDER_STATUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+                </select>
+                <button class="btn btn-yellow" onclick="searchOrder(1)">查询</button>
+                <button class="btn btn-plain" onclick="resetOrder()">重置</button>
+            </div>
+            <table>
+                <thead><tr><th>订单号</th><th>状态</th><th>金额</th><th>手机号</th><th>下单时间</th><th>操作</th></tr></thead>
+                <tbody id="orderTbody"></tbody>
+            </table>
+            <div class="pagination" id="orderPagination"></div>
+        </div></div>
+    `;
+    await fetchOrder();
+}
+
+function buildOrderQuery() {
+    const status = $('#orderStatus').value;
+    const number = $('#orderNumber').value.trim();
+    const phone = $('#orderPhone').value.trim();
+    const query = { page: orderPage.page, pageSize: orderPage.pageSize };
+    if (status) query.status = status;
+    if (number) query.number = number;
+    if (phone) query.phone = phone;
+    return query;
+}
+
+async function fetchOrder() {
+    const query = buildOrderQuery();
+    try {
+        const data = await request('/admin/order/conditionSearch?' + new URLSearchParams(query).toString());
+        orderPage.total = data.total;
+        const rows = (data.records || []).map(o => `
+            <tr>
+                <td>${o.number || '-'}</td>
+                <td>${statusTag(o.status)}</td>
+                <td>¥${o.amount ?? '-'}</td>
+                <td>${o.phone || '-'}</td>
+                <td>${fmtTime(o.orderTime)}</td>
+                <td>
+                    <button class="btn btn-sm btn-plain" onclick="viewOrder(${o.id})">详情</button>
+                    ${orderActions(o)}
+                </td>
+            </tr>`).join('');
+        $('#orderTbody').innerHTML = rows || '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+        renderPagination('orderPagination', orderPage.page, Math.ceil(orderPage.total / orderPage.pageSize), p => { orderPage.page = p; fetchOrder(); });
+    } catch (e) { showToast(e.message); }
+}
+
+function statusTag(status) {
+    const map = {2:'tag-yellow',3:'tag-green',4:'tag-green',5:'tag-green',6:'tag-red',1:'tag-gray'};
+    return `<span class="tag ${map[status]||'tag-gray'}">${ORDER_STATUS[status]||status}</span>`;
+}
+
+function orderActions(o) {
+    const btns = [];
+    if (o.status === 2) btns.push(`<button class="btn btn-sm btn-yellow" onclick="orderOp(${o.id},'confirm')">接单</button>`);
+    if (o.status === 2) btns.push(`<button class="btn btn-sm btn-danger" onclick="rejectOrder(${o.id})">拒单</button>`);
+    if (o.status === 3) btns.push(`<button class="btn btn-sm btn-success" onclick="orderOp(${o.id},'delivery')">派送</button>`);
+    if (o.status === 4) btns.push(`<button class="btn btn-sm btn-success" onclick="orderOp(${o.id},'complete')">完成</button>`);
+    return btns.join(' ');
+}
+
+async function orderOp(id, action) {
+    const map = { confirm: {url:'/admin/order/confirm', body:{id}}, delivery: {url:`/admin/order/delivery/${id}`, method:'PUT'}, complete: {url:`/admin/order/complete/${id}`, method:'PUT'} };
+    const op = map[action];
+    try {
+        if (action === 'delivery' || action === 'complete') {
+            await request(op.url, { method: 'PUT' });
+        } else {
+            await request(op.url, { method: 'PUT', body: JSON.stringify(op.body) });
+        }
+        showToast('操作成功');
+        fetchOrder();
+    } catch (e) { showToast(e.message); }
+}
+
+async function rejectOrder(id) {
+    const reason = prompt('请输入拒单原因：');
+    if (reason === null) return;
+    try {
+        await request('/admin/order/rejection', { method: 'PUT', body: JSON.stringify({ id, rejectionReason: reason }) });
+        showToast('拒单成功');
+        fetchOrder();
+    } catch (e) { showToast(e.message); }
+}
+
+async function viewOrder(id) {
+    try {
+        const o = await request(`/admin/order/details/${id}`);
+        const details = (o.orderDetailList || []).map(d =>
+            `<div><span>${d.name}</span> ×${d.number}　单价 ¥${d.amount}</div>`).join('');
+        openModal('订单详情', `
+            <div class="detail-list">
+                <div><span>订单号</span>${o.number}</div>
+                <div><span>状态</span>${ORDER_STATUS[o.status]}</div>
+                <div><span>金额</span>¥${o.amount}</div>
+                <div><span>收货人</span>${o.consignee || '-'}（${o.phone || '-'}）</div>
+                <div><span>地址</span>${o.address || '-'}</div>
+                <div><span>备注</span>${o.remark || '-'}</div>
+                <div><span>下单时间</span>${fmtTime(o.orderTime)}</div>
+                <div style="margin-top:10px"><span>商品明细</span></div>
+                ${details || '<div style="color:#909399">无明细</div>'}
+            </div>
+        `);
+    } catch (e) { showToast(e.message); }
+}
+
+function searchOrder(p) { orderPage.page = p; fetchOrder(); }
+function resetOrder() {
+    $('#orderNumber').value = ''; $('#orderPhone').value = ''; $('#orderStatus').value = '';
+    orderPage.page = 1; fetchOrder();
+}
+
+/* ================= 菜品管理 ================= */
+let dishPage = { page: 1, pageSize: 10, total: 0, query: {} };
+
+async function loadDish() {
+    $('#mainContent').innerHTML = `
+        <div class="panel"><div class="panel-body">
+            <div class="toolbar">
+                <input id="dishName" placeholder="菜品名称" style="width:160px">
+                <select id="dishCategory"><option value="">全部分类</option></select>
+                <select id="dishStatus"><option value="">全部状态</option><option value="1">起售</option><option value="0">停售</option></select>
+                <button class="btn btn-yellow" onclick="searchDish(1)">查询</button>
+            </div>
+            <table>
+                <thead><tr><th>名称</th><th>图片</th><th>分类</th><th>价格</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="dishTbody"></tbody>
+            </table>
+            <div class="pagination" id="dishPagination"></div>
+        </div></div>
+    `;
+    await loadCategoryOptions('dishCategory', 1);
+    await fetchDish();
+}
+
+async function loadCategoryOptions(selId, type) {
+    try {
+        const list = await request(`/admin/category/list?type=${type}`);
+        const sel = document.getElementById(selId);
+        if (sel) sel.innerHTML = '<option value="">全部分类</option>' + list.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    } catch (e) {}
+}
+
+async function fetchDish() {
+    const name = $('#dishName').value.trim();
+    const categoryId = $('#dishCategory').value;
+    const status = $('#dishStatus').value;
+    const query = { page: dishPage.page, pageSize: dishPage.pageSize };
+    if (name) query.name = name;
+    if (categoryId) query.categoryId = categoryId;
+    if (status) query.status = status;
+    try {
+        const data = await request('/admin/dish/page?' + new URLSearchParams(query).toString());
+        dishPage.total = data.total;
+        const rows = (data.records || []).map(d => `
+            <tr>
+                <td>${d.name}</td>
+                <td>${d.image ? `<img class="img-thumb" src="${d.image}" onerror="this.style.display='none'">` : '-'}</td>
+                <td>${d.categoryName || '-'}</td>
+                <td>¥${d.price}</td>
+                <td>${d.status === 1 ? '<span class="tag tag-green">起售</span>' : '<span class="tag tag-gray">停售</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-plain" onclick="toggleDish(${d.id}, ${d.status === 1 ? 0 : 1})">${d.status === 1 ? '停售' : '起售'}</button>
+                    <button class="btn btn-sm btn-danger" onclick="delDish(${d.id})">删除</button>
+                </td>
+            </tr>`).join('');
+        $('#dishTbody').innerHTML = rows || '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+        renderPagination('dishPagination', dishPage.page, Math.ceil(dishPage.total / dishPage.pageSize), p => { dishPage.page = p; fetchDish(); });
+    } catch (e) { showToast(e.message); }
+}
+
+async function toggleDish(id, status) {
+    try { await request(`/admin/dish/status/${status}?id=${id}`, { method: 'POST' }); showToast('操作成功'); fetchDish(); }
+    catch (e) { showToast(e.message); }
+}
+
+async function delDish(id) {
+    if (!confirm('确认删除该菜品？')) return;
+    try { await request('/admin/dish?ids=' + id, { method: 'DELETE' }); showToast('删除成功'); fetchDish(); }
+    catch (e) { showToast(e.message); }
+}
+
+function searchDish(p) { dishPage.page = p; fetchDish(); }
+
+/* ================= 套餐管理 ================= */
+let setmealPage = { page: 1, pageSize: 10, total: 0 };
+
+async function loadSetmeal() {
+    $('#mainContent').innerHTML = `
+        <div class="panel"><div class="panel-body">
+            <div class="toolbar">
+                <input id="setmealName" placeholder="套餐名称" style="width:160px">
+                <select id="setmealCategory"><option value="">全部分类</option></select>
+                <select id="setmealStatus"><option value="">全部状态</option><option value="1">起售</option><option value="0">停售</option></select>
+                <button class="btn btn-yellow" onclick="searchSetmeal(1)">查询</button>
+            </div>
+            <table>
+                <thead><tr><th>名称</th><th>图片</th><th>分类</th><th>价格</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="setmealTbody"></tbody>
+            </table>
+            <div class="pagination" id="setmealPagination"></div>
+        </div></div>
+    `;
+    await loadCategoryOptions('setmealCategory', 2);
+    await fetchSetmeal();
+}
+
+async function fetchSetmeal() {
+    const name = $('#setmealName').value.trim();
+    const categoryId = $('#setmealCategory').value;
+    const status = $('#setmealStatus').value;
+    const query = { page: setmealPage.page, pageSize: setmealPage.pageSize };
+    if (name) query.name = name;
+    if (categoryId) query.categoryId = categoryId;
+    if (status) query.status = status;
+    try {
+        const data = await request('/admin/setmeal/page?' + new URLSearchParams(query).toString());
+        setmealPage.total = data.total;
+        const rows = (data.records || []).map(s => `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.image ? `<img class="img-thumb" src="${s.image}" onerror="this.style.display='none'">` : '-'}</td>
+                <td>${s.categoryName || '-'}</td>
+                <td>¥${s.price}</td>
+                <td>${s.status === 1 ? '<span class="tag tag-green">起售</span>' : '<span class="tag tag-gray">停售</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-plain" onclick="toggleSetmeal(${s.id}, ${s.status === 1 ? 0 : 1})">${s.status === 1 ? '停售' : '起售'}</button>
+                    <button class="btn btn-sm btn-danger" onclick="delSetmeal(${s.id})">删除</button>
+                </td>
+            </tr>`).join('');
+        $('#setmealTbody').innerHTML = rows || '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+        renderPagination('setmealPagination', setmealPage.page, Math.ceil(setmealPage.total / setmealPage.pageSize), p => { setmealPage.page = p; fetchSetmeal(); });
+    } catch (e) { showToast(e.message); }
+}
+
+async function toggleSetmeal(id, status) {
+    try { await request(`/admin/setmeal/status/${status}?id=${id}`, { method: 'POST' }); showToast('操作成功'); fetchSetmeal(); }
+    catch (e) { showToast(e.message); }
+}
+
+async function delSetmeal(id) {
+    if (!confirm('确认删除该套餐？')) return;
+    try { await request('/admin/setmeal?ids=' + id, { method: 'DELETE' }); showToast('删除成功'); fetchSetmeal(); }
+    catch (e) { showToast(e.message); }
+}
+
+function searchSetmeal(p) { setmealPage.page = p; fetchSetmeal(); }
+
+/* ================= 分类管理 ================= */
+async function loadCategory() {
+    $('#mainContent').innerHTML = `
+        <div class="panel"><div class="panel-body">
+            <div class="toolbar">
+                <select id="catType"><option value="1">菜品分类</option><option value="2">套餐分类</option></select>
+                <button class="btn btn-yellow" onclick="addCategory()">新增分类</button>
+            </div>
+            <table>
+                <thead><tr><th>名称</th><th>类型</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="catTbody"></tbody>
+            </table>
+        </div></div>
+    `;
+    document.getElementById('catType').onchange = fetchCategory;
+    await fetchCategory();
+}
+
+async function fetchCategory() {
+    const type = $('#catType').value;
+    try {
+        const list = await request(`/admin/category/list?type=${type}`);
+        const rows = (list || []).map(c => `
+            <tr>
+                <td>${c.name}</td>
+                <td>${c.type === 1 ? '菜品分类' : '套餐分类'}</td>
+                <td>${c.sort ?? '-'}</td>
+                <td>${c.status === 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-gray">禁用</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-plain" onclick="toggleCategory(${c.id}, ${c.status === 1 ? 0 : 1})">${c.status === 1 ? '禁用' : '启用'}</button>
+                    <button class="btn btn-sm btn-plain" onclick="editCategory(${c.id})">编辑</button>
+                    <button class="btn btn-sm btn-danger" onclick="delCategory(${c.id})">删除</button>
+                </td>
+            </tr>`).join('');
+        $('#catTbody').innerHTML = rows || '<tr><td colspan="5" class="empty">暂无数据</td></tr>';
+    } catch (e) { showToast(e.message); }
+}
+
+function addCategory() {
+    openModal('新增分类', `
+        <div class="form-item"><label>分类名称</label><input id="catName" type="text" placeholder="请输入名称"></div>
+        <div class="form-item"><label>排序</label><input id="catSort" type="number" value="0"></div>
+        <div class="modal-footer">
+            <button class="btn btn-plain" onclick="closeModal()">取消</button>
+            <button class="btn btn-yellow" onclick="saveCategory()">保存</button>
+        </div>
+    `);
+}
+
+async function saveCategory() {
+    const type = parseInt($('#catType').value);
+    const name = $('#catName').value.trim();
+    const sort = parseInt($('#catSort').value || '0');
+    if (!name) { showToast('请输入名称'); return; }
+    try {
+        await request('/admin/category', { method: 'POST', body: JSON.stringify({ name, sort, type, status: 1 }) });
+        showToast('新增成功'); closeModal(); fetchCategory();
+    } catch (e) { showToast(e.message); }
+}
+
+async function editCategory(id) {
+    try {
+        const list = await request(`/admin/category/list?type=${$('#catType').value}`);
+        const c = list.find(x => x.id === id);
+        openModal('编辑分类', `
+            <div class="form-item"><label>分类名称</label><input id="catName" type="text" value="${c.name}"></div>
+            <div class="form-item"><label>排序</label><input id="catSort" type="number" value="${c.sort ?? 0}"></div>
+            <div class="modal-footer">
+                <button class="btn btn-plain" onclick="closeModal()">取消</button>
+                <button class="btn btn-yellow" onclick="updateCategory(${id})">保存</button>
+            </div>
+        `);
+    } catch (e) { showToast(e.message); }
+}
+
+async function updateCategory(id) {
+    const name = $('#catName').value.trim();
+    const sort = parseInt($('#catSort').value || '0');
+    try {
+        await request('/admin/category', { method: 'PUT', body: JSON.stringify({ id, name, sort }) });
+        showToast('修改成功'); closeModal(); fetchCategory();
+    } catch (e) { showToast(e.message); }
+}
+
+async function toggleCategory(id, status) {
+    try { await request(`/admin/category/status/${status}?id=${id}`, { method: 'POST' }); showToast('操作成功'); fetchCategory(); }
+    catch (e) { showToast(e.message); }
+}
+
+async function delCategory(id) {
+    if (!confirm('确认删除该分类？')) return;
+    try { await request('/admin/category?id=' + id, { method: 'DELETE' }); showToast('删除成功'); fetchCategory(); }
+    catch (e) { showToast(e.message); }
+}
+
+/* ================= 员工管理 ================= */
+let empPage = { page: 1, pageSize: 10, total: 0 };
+
+async function loadEmployee() {
+    $('#mainContent').innerHTML = `
+        <div class="panel"><div class="panel-body">
+            <div class="toolbar">
+                <input id="empName" placeholder="员工姓名" style="width:160px">
+                <button class="btn btn-yellow" onclick="searchEmp(1)">查询</button>
+                <button class="btn btn-yellow" onclick="addEmp()">新增员工</button>
+            </div>
+            <table>
+                <thead><tr><th>姓名</th><th>账号</th><th>手机号</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+                <tbody id="empTbody"></tbody>
+            </table>
+            <div class="pagination" id="empPagination"></div>
+        </div></div>
+    `;
+    await fetchEmp();
+}
+
+async function fetchEmp() {
+    const name = $('#empName').value.trim();
+    const query = { page: empPage.page, pageSize: empPage.pageSize };
+    if (name) query.name = name;
+    try {
+        const data = await request('/admin/employee/page?' + new URLSearchParams(query).toString());
+        empPage.total = data.total;
+        const rows = (data.records || []).map(e => `
+            <tr>
+                <td>${e.name}</td>
+                <td>${e.username}</td>
+                <td>${e.phone || '-'}</td>
+                <td>${e.status === 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-gray">禁用</span>'}</td>
+                <td>${fmtTime(e.createTime)}</td>
+                <td>
+                    <button class="btn btn-sm btn-plain" onclick="toggleEmp(${e.id}, ${e.status === 1 ? 0 : 1})">${e.status === 1 ? '禁用' : '启用'}</button>
+                </td>
+            </tr>`).join('');
+        $('#empTbody').innerHTML = rows || '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+        renderPagination('empPagination', empPage.page, Math.ceil(empPage.total / empPage.pageSize), p => { empPage.page = p; fetchEmp(); });
+    } catch (e) { showToast(e.message); }
+}
+
+function addEmp() {
+    openModal('新增员工', `
+        <div class="form-item"><label>姓名</label><input id="empName2" type="text" placeholder="请输入姓名"></div>
+        <div class="form-item"><label>账号</label><input id="empUsername" type="text" placeholder="请输入账号"></div>
+        <div class="form-item"><label>手机号</label><input id="empPhone" type="text" placeholder="请输入手机号"></div>
+        <div class="form-item"><label>性别</label>
+            <select id="empSex"><option value="男">男</option><option value="女">女</option></select>
+        </div>
+        <div class="form-item"><label>身份证号</label><input id="empIdNumber" type="text" placeholder="请输入身份证号"></div>
+        <div class="modal-footer">
+            <button class="btn btn-plain" onclick="closeModal()">取消</button>
+            <button class="btn btn-yellow" onclick="saveEmp()">保存</button>
+        </div>
+    `);
+}
+
+async function saveEmp() {
+    const body = {
+        name: $('#empName2').value.trim(),
+        username: $('#empUsername').value.trim(),
+        phone: $('#empPhone').value.trim(),
+        sex: $('#empSex').value,
+        idNumber: $('#empIdNumber').value.trim()
+    };
+    if (!body.name || !body.username) { showToast('姓名和账号必填'); return; }
+    try {
+        await request('/admin/employee', { method: 'POST', body: JSON.stringify(body) });
+        showToast('新增成功'); closeModal(); fetchEmp();
+    } catch (e) { showToast(e.message); }
+}
+
+async function toggleEmp(id, status) {
+    try { await request(`/admin/employee/status/${status}?id=${id}`, { method: 'POST' }); showToast('操作成功'); fetchEmp(); }
+    catch (e) { showToast(e.message); }
+}
+
+function searchEmp(p) { empPage.page = p; fetchEmp(); }
+
+/* ================= 统计报表 ================= */
+async function loadReport() {
+    const today = new Date();
+    const end = today.toISOString().slice(0, 10);
+    const begin = new Date(today.getTime() - 30*86400000).toISOString().slice(0, 10);
+    $('#mainContent').innerHTML = `
+        <div class="panel"><div class="panel-body">
+            <div class="toolbar">
+                <input id="rpBegin" type="date" value="${begin}">
+                <span>至</span>
+                <input id="rpEnd" type="date" value="${end}">
+                <button class="btn btn-yellow" onclick="fetchReport()">查询</button>
+                <button class="btn btn-success" onclick="exportExcel()">导出营业额 Excel</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div class="panel"><div class="panel-body">
+                    <h3 style="margin-bottom:12px">营业额统计</h3>
+                    <table><thead><tr><th>日期</th><th>营业额</th><th>有效订单</th><th>完成率</th><th>客单价</th></tr></thead>
+                    <tbody id="rpTurnover"></tbody></table>
+                </div></div>
+                <div class="panel"><div class="panel-body">
+                    <h3 style="margin-bottom:12px">订单统计</h3>
+                    <table><thead><tr><th>日期</th><th>总订单</th><th>有效订单</th><th>完成率</th></tr></thead>
+                    <tbody id="rpOrder"></tbody></table>
+                </div></div>
+                <div class="panel"><div class="panel-body">
+                    <h3 style="margin-bottom:12px">用户统计</h3>
+                    <table><thead><tr><th>日期</th><th>新增用户</th><th>累计用户</th></tr></thead>
+                    <tbody id="rpUser"></tbody></table>
+                </div></div>
+                <div class="panel"><div class="panel-body">
+                    <h3 style="margin-bottom:12px">销量 Top10</h3>
+                    <table><thead><tr><th>商品</th><th>销量</th></tr></thead>
+                    <tbody id="rpTop10"></tbody></table>
+                </div></div>
+            </div>
+        </div></div>
+    `;
+    await fetchReport();
+}
+
+async function fetchReport() {
+    const begin = $('#rpBegin').value;
+    const end = $('#rpEnd').value;
+    if (!begin || !end) { showToast('请选择日期'); return; }
+    const q = `begin=${begin}&end=${end}`;
+    try {
+        const [turnover, order, user, top10] = await Promise.all([
+            request(`/admin/report/turnoverStatistics?${q}`),
+            request(`/admin/report/orderStatistics?${q}`),
+            request(`/admin/report/userStatistics?${q}`),
+            request(`/admin/report/salesTop10?${q}`)
+        ]);
+        $('#rpTurnover').innerHTML = (turnover || []).map(r => `<tr><td>${r.date}</td><td>¥${r.turnover}</td><td>${r.validOrderCount}</td><td>${(r.orderCompletionRate*100).toFixed(0)}%</td><td>¥${r.unitPrice}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">暂无</td></tr>';
+        $('#rpOrder').innerHTML = (order || []).map(r => `<tr><td>${r.date}</td><td>${r.totalOrderCount}</td><td>${r.validOrderCount}</td><td>${(r.orderCompletionRate*100).toFixed(0)}%</td></tr>`).join('') || '<tr><td colspan="4" class="empty">暂无</td></tr>';
+        $('#rpUser').innerHTML = (user || []).map(r => `<tr><td>${r.date}</td><td>${r.newUserCount}</td><td>${r.totalUserCount}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">暂无</td></tr>';
+        $('#rpTop10').innerHTML = (top10 || []).map((r,i) => `<tr><td>${i+1}. ${r.name}</td><td>${r.number}</td></tr>`).join('') || '<tr><td colspan="2" class="empty">暂无</td></tr>';
+    } catch (e) { showToast(e.message); }
+}
+
+function exportExcel() {
+    if (!token) { showToast('请先登录'); return; }
+    fetch(API + '/admin/report/export', { headers: { 'token': token } })
+        .then(resp => {
+            if (resp.status === 401) { logout(); throw new Error('未登录'); }
+            // 从 Content-Disposition 解析后端返回的文件名
+            let filename = '营业额报表.xlsx';
+            const cd = resp.headers.get('Content-Disposition') || '';
+            const m = cd.match(/filename\*=UTF-8''([^;]+)/);
+            if (m) filename = decodeURIComponent(m[1]);
+            return resp.blob().then(blob => ({ blob, filename }));
+        })
+        .then(({ blob, filename }) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast('导出成功');
+        })
+        .catch(e => showToast('导出失败：' + e.message));
+}
+
+/* ================= 弹窗 ================= */
+function openModal(title, bodyHtml) {
+    $('#modalBody').innerHTML = `<h3>${title}</h3>${bodyHtml}`;
+    $('#modalMask').classList.add('show');
+}
+function closeModal() { $('#modalMask').classList.remove('show'); }
+$('#modalMask').onclick = e => { if (e.target === e.currentTarget) closeModal(); };
+
+/* ================= 分页 ================= */
+function renderPagination(elId, page, totalPages, onPage) {
+    const el = document.getElementById(elId);
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    let html = `<button ${page===1?'disabled':''} data-pg="${page-1}">‹</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (totalPages > 7 && Math.abs(i - page) > 3 && i !== 1 && i !== totalPages) {
+            if (i === 2 || i === totalPages - 1) html += '<span style="color:#909399">…</span>';
+            continue;
+        }
+        html += `<button class="${i===page?'active':''}" data-pg="${i}">${i}</button>`;
+    }
+    html += `<button ${page===totalPages?'disabled':''} data-pg="${page+1}">›</button>`;
+    el.innerHTML = html;
+    el.querySelectorAll('button').forEach(btn => {
+        btn.onclick = () => {
+            const p = parseInt(btn.dataset.pg);
+            if (p >= 1 && p <= totalPages) onPage(p);
+        };
+    });
+}
+
+/* ================= 初始化 ================= */
+(function init() {
+    if (token) {
+        // 尝试用已有 token 直接进入（/info 返回的是当前登录人 id）
+        fetch(API + '/admin/employee/info', { headers: { 'token': token } })
+            .then(r => r.json())
+            .then(data => {
+                if (data.code === 1) {
+                    // 用本地缓存的姓名展示，id 仅作校验
+                    currentUser = { id: data.data, name: localStorage.getItem('admin_name') || '管理员' };
+                    enterApp();
+                } else {
+                    logout();
+                }
+            })
+            .catch(() => logout());
+    }
+})();
+</script>
+</body>
+</html>

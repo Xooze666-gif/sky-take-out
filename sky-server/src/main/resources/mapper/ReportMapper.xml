@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sky.mapper.ReportMapper">
+
+    <!--
+      营业额统计：按天汇总「已完成」订单的实收金额。
+      口径说明：
+        - 统计维度取 order_time 的日期（下单日期），业务上以「下单日」对齐各报表时间轴；
+        - 营业额只统计 status=5（已完成）的订单，避免待付款/取消订单污染营业额；
+        - amount 已是实收金额（支付成功时才写入），直接 SUM 即可。
+    -->
+    <select id="turnoverStatistics" resultType="com.sky.vo.BusinessDataVO">
+        select date_format(order_time, '%Y-%m-%d')                        as date,
+               round(sum(amount), 2)                                       as turnover,
+               count(*)                                                    as validOrderCount
+        from orders
+        where status = 5
+          and order_time &gt;= #{begin}
+          and order_time &lt; date_add(#{end}, interval 1 day)
+        group by date_format(order_time, '%Y-%m-%d')
+        order by date
+    </select>
+
+    <!--
+      用户统计：按天统计新增用户数（取 create_time 日期）。
+      累计总数由 service 层在内存中按日期累加（区间内逐日累加）。
+    -->
+    <select id="userStatistics" resultType="com.sky.vo.UserReportVO">
+        select date(create_time) as date,
+               count(*)          as newUserCount
+        from user
+        where create_time &gt;= #{begin}
+          and create_time &lt; date_add(#{end}, interval 1 day)
+        group by date(create_time)
+        order by date
+    </select>
+
+    <!-- 截止某日期（含）的累计用户总数 -->
+    <select id="countUsersByDate" resultType="java.lang.Integer">
+        select count(*)
+        from user
+        where create_time &lt; date_add(#{end}, interval 1 day)
+    </select>
+
+    <!--
+      订单统计：按天统计订单总数与有效订单数（已完成）。
+      完成率由 service 层计算（有效订单数 / 总订单数）。
+    -->
+    <select id="orderStatistics" resultType="com.sky.vo.OrderReportVO">
+        select date_format(order_time, '%Y-%m-%d')                                  as date,
+               count(*)                                                             as totalOrderCount,
+               sum(case when status = 5 then 1 else 0 end)                          as validOrderCount
+        from orders
+        where order_time &gt;= #{begin}
+          and order_time &lt; date_add(#{end}, interval 1 day)
+        group by date_format(order_time, '%Y-%m-%d')
+        order by date
+    </select>
+
+    <!--
+      销量 Top10：按订单明细汇总商品销量。
+      只统计已完成订单（status=5）的明细，name 已是下单时的商品名快照。
+    -->
+    <select id="salesTop10" resultType="com.sky.vo.SalesTop10ReportVO">
+        select od.name        as name,
+               sum(od.number) as number
+        from order_detail od
+                 join orders o on od.order_id = o.id
+        where o.status = 5
+          and o.order_time &gt;= #{begin}
+          and o.order_time &lt; date_add(#{end}, interval 1 day)
+        group by od.name
+        order by number desc
+        limit 10
+    </select>
+</mapper>
